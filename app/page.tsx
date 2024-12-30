@@ -1,11 +1,13 @@
 "use client";
 import { v4 as uuidv4 } from 'uuid';
 import React, { useEffect, useState } from 'react';
-import { MessageSquare } from 'lucide-react';
+import { Bot  , LogOut} from 'lucide-react';
 import { ChatHistory } from '@/components/ChatHistory';
 import { ChatInput } from '@/components/ChatInput';
 import { Sidebar } from '@/components/Sidebar';
 import { Message, ChatSession } from '@/types';
+import { signOut , useSession } from 'next-auth/react';
+import { redirect } from 'next/navigation';
 
 function App() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -15,8 +17,15 @@ function App() {
   const [sessionLoading , setSessionLoading ] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const activeSession = sessions.find((s) => s._id === activeSessionId)!;
-
+  const { data: session ,status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      redirect('/Login');
+    },
+  })
   
+
+
   const fetchsessions = async () => {
     try {
       setSessionLoading(true);
@@ -104,8 +113,7 @@ function App() {
     fetchMessagesBySession(activeSessionId);
   }, [activeSessionId]);
 
-  console.log("messages : " , messages);
-  console.log("seesion id : " , activeSessionId);
+
   const handleSubmit = async (prompt: string) => {
   
 
@@ -189,6 +197,11 @@ function App() {
       setIsLoading(false);
     }
   };
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+  console.log('session', session);
+
   
   
   if(!activeSessionId){
@@ -208,11 +221,16 @@ function App() {
 
       <div className="flex flex-1 flex-col relative">
         <header className="bg-white px-6 py-4 shadow-sm absolute top-0 left-0 right-0 z-10">
-          <div className="mx-auto flex max-w-4xl items-center gap-2">
+          <div className=" flex max-w-4xl items-center gap-2">
+            <div>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
-              <MessageSquare className="h-5 w-5 text-purple-500" />
+                <Bot className="w-5 h-5 text-indigo-600" />
             </div>
             <h1 className="text-xl font-semibold text-gray-900">ChatBot</h1>
+            </div>
+            <button className='ml-auto ' onClick={() => signOut()}>
+              <LogOut  />
+            </button>
           </div>
         </header>
 
