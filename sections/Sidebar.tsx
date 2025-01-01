@@ -61,9 +61,9 @@ export function Sidebar({
       {/* Scrollable ChatThread Section */}
       <div className="flex-1 overflow-y-auto px-2 hide-scrollbar">
         {sessionLoading ? (
-          <div className="flex items-center justify-center h-full">
-          <Loader2 className="animate-spin h-6 w-6 mx-auto text-indigo-600" />
-          </div>
+          <div className="flex items-center justify-center min-h-96">
+<Loader2 className="custom-spin h-6 w-6 mx-auto text-indigo-600" />
+</div>
         ) : (
           Object.entries(filteredSessionsByDate)
           .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime()) // Sort dates in descending order

@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { MessageModel } from "@/models/AiConverstation"; // Ensure the path is correct
 import connectDB from "@/lib/connectdb";
 
-export async function GET(req: NextRequest, { params }: { params: { sessionId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ sessionId: string }> }) {
   try {
     // Establish database connection
     await connectDB();
 
     // Extract sessionId from the route params
-    const { sessionId } = await params;
+    const  sessionId  = (await params).sessionId;
 
     // Parse query parameters for offset and limit
     const { searchParams } = new URL(req.url);

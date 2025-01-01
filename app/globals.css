@@ -74,3 +74,17 @@
     display: none;             /* Chrome, Safari and Opera */
   }
 }
+
+/* Add this in your global CSS or tailwind config */
+@keyframes custom-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.custom-spin {
+  animation: custom-spin 1s linear infinite;
+}

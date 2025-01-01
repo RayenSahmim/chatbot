@@ -2,9 +2,9 @@ import connectDB from "@/lib/connectdb";
 import { ChatSessionModel } from "@/models/ChatSession";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, { params }: { params: { useremail: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ useremail: string }> }) {
     try {
-        const { useremail } =await  params;
+        const useremail  = (await params).useremail;
 
         await connectDB();
 
