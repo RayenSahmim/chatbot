@@ -7,11 +7,12 @@ export async function POST(req : NextRequest) {
     await connectDB();
     const body = await req.json();
     console.log('body', body);
-    const { timestamp ,sessionId,content ,sender , _id } = body;
+    const { timestamp ,sessionId,content ,sender , _id , useremail } = body;
     console.log(typeof sessionId);
     // Create a new ChatSession with a reference to the AiConversation message
     const message = new MessageModel({
         _id ,
+        useremail ,
         sessionId ,
         content ,
         sender  ,

@@ -2,7 +2,8 @@ import mongoose, { Schema } from 'mongoose';
 
 const ChatSessionSchema: Schema = new Schema({
     timestamp: { type: Date, required: true },
-    name: { type: String, required: true }
+    name: { type: String, required: true },
+    useremail: { type: String, required: true },
 });
 
 // Avoid overwriting the model if it already exists
