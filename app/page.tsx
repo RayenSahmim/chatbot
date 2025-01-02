@@ -8,15 +8,21 @@ import { Message, ChatSession } from "@/types";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import Header from "@/sections/Header";
+import { EmptyState } from "@/components/EmptyState";
 
 function App() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState("1");
+  const [activeSessionId, setActiveSessionId] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const activeSession = sessions.find((s) => s._id === activeSessionId)!;
+  const activeSession = activeSessionId 
+    ? sessions.find((s) => s._id === activeSessionId)
+    : undefined;
+
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
@@ -24,24 +30,26 @@ function App() {
     },
   });
 
-  console.log("active session ", activeSessionId);
-
   const fetchsessions = async () => {
     try {
       setSessionLoading(true);
       const res = await fetch(`api/sessions/${session?.user?.email}`);
       const data = await res.json();
       setSessions(data);
-      console.log("sessions", data);
+      
+      
     } catch (error) {
       console.error("Error fetching sessions:", error);
     } finally {
       setSessionLoading(false);
     }
   };
+
   useEffect(() => {
     fetchsessions();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
+
   const createSession = async () => {
     try {
       const res = await fetch("/api/sessions", {
@@ -55,13 +63,19 @@ function App() {
       const data = await res.json();
 
       setSessions((prevSessions) => [...prevSessions, data]);
-      setActiveSessionId(data.id);
+      setActiveSessionId(data._id); // Make sure to use the correct ID field
+      setIsSidebarOpen(false);
     } catch (error) {
       console.error("Error creating session:", error);
     }
   };
 
   const saveMessage = async (message: Message) => {
+    if (!activeSessionId) {
+      console.error("No active session");
+      return;
+    }
+
     try {
       const res = await fetch("/api/messages", {
         method: "POST",
@@ -69,13 +83,18 @@ function App() {
         body: JSON.stringify(message),
       });
       const data = await res.json();
-
       return data;
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
-  const fetchMessagesBySession = async (sessionId: string) => {
+
+  const fetchMessagesBySession = async (sessionId: string | undefined) => {
+    if (!sessionId) {
+      setMessages([]);
+      return;
+    }
+
     try {
       const res = await fetch(`/api/messages/${sessionId}`);
       const data = await res.json();
@@ -87,6 +106,11 @@ function App() {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const editMessage = async (message: Message) => {
+    if (!activeSessionId) {
+      console.error("No active session");
+      return;
+    }
+
     try {
       const res = await fetch("/api/messages", {
         method: "PUT",
@@ -109,10 +133,14 @@ function App() {
 
   useEffect(() => {
     fetchMessagesBySession(activeSessionId);
-  }, []);
+  }, [activeSessionId]);
 
   const handleSubmit = async (prompt: string) => {
-    // Create new user message
+    if (!activeSessionId) {
+      console.error("No active session");
+      return;
+    }
+
     const newUserMessage: Message = {
       _id: uuidv4(),
       content: prompt,
@@ -121,15 +149,12 @@ function App() {
       sessionId: activeSessionId,
     };
 
-    // Save the user message to the backend and update the frontend state
     const savedUserMessage = await saveMessage(newUserMessage);
     setMessages((prevMessages) => [...prevMessages, savedUserMessage]);
 
     setIsLoading(true);
 
     try {
-      // Create an initial bot message in the backend to get its _id
-      // create new message id
       const Id = uuidv4();
       const initialBotMessage: Message = {
         _id: Id,
@@ -158,7 +183,6 @@ function App() {
           const chunk = decoder.decode(value);
           responseText += chunk;
 
-          // Update the bot message content in the frontend state
           setMessages((prevMessages) =>
             prevMessages.map((message) =>
               message._id === initialBotMessage._id
@@ -176,10 +200,9 @@ function App() {
     } catch (error) {
       console.error("Error streaming AI response:", error);
 
-      // Handle error by displaying an error message
       const errorMessage: Message = {
-        content:
-          "I apologize, but I encountered an error while processing your request.",
+        _id: uuidv4(),
+        content: "I apologize, but I encountered an error while processing your request.",
         sender: "bot",
         timestamp: new Date(),
         sessionId: activeSessionId,
@@ -190,37 +213,66 @@ function App() {
       setIsLoading(false);
     }
   };
+
   if (status === "loading") {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
   }
-  console.log("session", session);
+
+  const handleSessionSelect = (sessionId: string) => {
+    setActiveSessionId(sessionId);
+  };
 
   return (
-    <div className="flex h-screen bg-gray-50 relative">
-      <div className="w-1/5 border-r">
+    <div className="flex h-screen bg-gray-50">
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <div
+        className={`${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } transform md:translate-x-0 transition-transform duration-200 ease-in-out fixed md:relative z-30 w-[300px] md:min-w-[300px] md:w-1/5 h-full bg-white border-r`}
+      >
         <Sidebar
+        setActiveSessionId={setActiveSessionId}
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
           sessionLoading={sessionLoading}
           sessions={sessions}
           authsession={session}
           setSessions={setSessions}
           activeSessionId={activeSessionId}
-          onSessionSelect={setActiveSessionId}
+          onSessionSelect={handleSessionSelect}
           onNewChat={createSession}
         />
       </div>
 
-      <div className="flex  flex-col relative w-4/5">
+      <div className="flex flex-col flex-1 w-full md:w-4/5">
         <div className="border-b bg-white px-4 py-2 shadow-sm">
-          <Header  />
+          <Header isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
         </div>
-        <div className="flex-1 overflow-x-hidden ">
-          <div className="h-fit min-h-full bg-white shadow-sm ">
-            <ChatHistory messages={messages} />
-          </div>
+        
+        <div className="flex-1 overflow-x-hidden">
+          {activeSessionId ? (
+            <div className="h-fit min-h-full bg-white shadow-sm">
+              <ChatHistory messages={messages} />
+            </div>
+          ) : (
+            <EmptyState onCreateSession={createSession} />
+          )}
         </div>
 
-        <div className="border-t bg-white p-4  w-full ">
-          <ChatInput onSendMessage={handleSubmit} isLoading={isLoading} />
+        <div className="border-t bg-white p-4 w-full">
+          {activeSessionId && (
+            <ChatInput onSendMessage={handleSubmit} isLoading={isLoading} />
+          )}
         </div>
       </div>
     </div>

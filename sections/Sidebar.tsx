@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Loader2, LogOut, User } from "lucide-react";
+import { Plus, Loader2, LogOut, User, Menu } from "lucide-react";
 import { ChatThread } from "@/components/ChatThread";
 import { ChatSession } from "@/types";
 import { format } from "date-fns";
@@ -11,18 +11,25 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast"
 
 interface SidebarProps {
+  isSidebarOpen: boolean;
+  setIsSidebarOpen : React.Dispatch<React.SetStateAction<boolean>>;
+  
+  setActiveSessionId: React.Dispatch<React.SetStateAction<string | undefined>>;
   sessionLoading: boolean;
   sessions: ChatSession[];
   authsession: Session;
   setSessions: React.Dispatch<React.SetStateAction<ChatSession[]>>;
-  activeSessionId: string;
+  activeSessionId: string | undefined;
   onSessionSelect: (sessionId: string) => void;
   onNewChat: () => void;
 }
 
 export function Sidebar({
+  isSidebarOpen,
+  setIsSidebarOpen,
   sessionLoading,
   sessions,
+  setActiveSessionId,
   authsession,
   setSessions,
   activeSessionId,
@@ -31,6 +38,7 @@ export function Sidebar({
 }: SidebarProps) {
   // Group sessions by formatted date
   const [searchTerm, setSearchTerm] = useState("");
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { toast } = useToast()
 
 
@@ -48,7 +56,16 @@ export function Sidebar({
   return (
     <div className="flex flex-col border-r bg-white h-screen">
       {/* Top Section */}
+      
       <div className="p-4 flex gap-2">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="  z-50 md:hidden"
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+      >
+        <Menu className="h-6 w-6" />
+      </Button>
         <SearchInput placeholder="Search" className="flex-1 w-full rounded-lg border border-gray-200  text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500" onChange={(e) => setSearchTerm(e.target.value)}/>
         <Button
           onClick={onNewChat}
@@ -74,6 +91,8 @@ export function Sidebar({
               </p>
               {groupedSessions.map((session) => (
                 <ChatThread
+                setActiveSessionId={setActiveSessionId}
+                activeSessionId={activeSessionId}
                   key={session._id}
                   session={session}
                   isActive={session._id === activeSessionId}

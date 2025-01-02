@@ -22,9 +22,11 @@ interface ChatThreadProps {
   isActive: boolean;
   onClick: () => void;
   setSessions: React.Dispatch<React.SetStateAction<ChatSession[]>>;
+  setActiveSessionId: React.Dispatch<React.SetStateAction<string | undefined>>;
+  activeSessionId: string | undefined;
 }
 
-export function ChatThread({ isActive, onClick, session, setSessions }: ChatThreadProps) {
+export function ChatThread({ isActive, onClick, session, setSessions , setActiveSessionId , activeSessionId }: ChatThreadProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(session.name);
 
@@ -63,6 +65,9 @@ export function ChatThread({ isActive, onClick, session, setSessions }: ChatThre
 
       if (res.ok) {
         setSessions((prevSessions) => prevSessions.filter((s) => s._id !== session._id));
+        if (session._id === activeSessionId) {
+          setActiveSessionId(undefined);
+        }
         console.log("Session deleted successfully");
       } else {
         console.error("Failed to delete session", res.statusText);
