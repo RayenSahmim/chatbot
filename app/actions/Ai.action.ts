@@ -1,7 +1,15 @@
 "use server";
+import { formatHistory } from "@/lib/utils";
+import { Message } from "@/types";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-export const sendAIResponse = async (prompt: string) => {
+const generationConfig = {
+  temperature: 1,
+  topP: 0.95,
+  topK: 40,
+  maxOutputTokens: 8192,
+  responseMimeType: "text/plain",
+};
+export const sendAIResponse = async (prompt: string , history : Message []) => {
   const apikey = process.env.GEMINI_API_KEY;
   if (!apikey) {
     throw new Error("GEMINI_API_KEY is required");
@@ -12,16 +20,8 @@ export const sendAIResponse = async (prompt: string) => {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
     const chat = model.startChat({
-      history: [
-        {
-          role: "user",
-          parts: [{ text: "Hello" }],
-        },
-        {
-          role: "model",
-          parts: [{ text: "Great to meet you. What would you like to know?" }],
-        },
-      ],
+      generationConfig,
+      history: formatHistory(history),
     });
 
     const result = await chat.sendMessageStream(prompt);
@@ -40,6 +40,7 @@ export const sendAIResponse = async (prompt: string) => {
         }
       },
     });
+    
 
     return stream; // Return the stream to the caller
   } catch (error) {

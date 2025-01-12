@@ -26,7 +26,7 @@ interface ChatThreadProps {
   activeSessionId: string | undefined;
 }
 
-export function ChatThread({ isActive, onClick, session, setSessions , setActiveSessionId , activeSessionId }: ChatThreadProps) {
+export function ChatThread({ isActive, onClick, session, setSessions, setActiveSessionId, activeSessionId }: ChatThreadProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(session.name);
 
@@ -80,12 +80,14 @@ export function ChatThread({ isActive, onClick, session, setSessions , setActive
   return (
     <button
       onClick={onClick}
-      className={`group flex w-full items-start gap-3 rounded-lg p-3 text-left transition-colors hover:bg-gray-100 ${
-        isActive ? "bg-gray-100" : ""
+      key={session._id}
+      onDoubleClick={() => setIsEditing(true)}
+      className={`group flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+        isActive ? "bg-gray-100 dark:bg-gray-700" : ""
       }`}
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-100">
-        <MessageSquare className="h-5 w-5  text-indigo-600 " />
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/50">
+        <MessageSquare className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
       </div>
       <div className="flex-1 overflow-hidden flex justify-between items-center px-5 py-2">
         <div className="flex flex-col">
@@ -95,52 +97,52 @@ export function ChatThread({ isActive, onClick, session, setSessions , setActive
               type="text"
               onChange={(e) => setEditedName(e.target.value)}
               onBlur={handleEdit}
-              className="focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              className="focus:border-purple-500 dark:focus:border-purple-400 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:focus:ring-purple-400 dark:bg-gray-800 dark:text-gray-200"
             />
           ) : (
-            <p className="font-medium text-gray-900">{session.name}</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100">{session.name}</p>
           )}
-          <p className="text-gray-500 text-sm font-semibold">
+          <p className="text-gray-500 dark:text-gray-400 text-sm font-semibold">
             {format(new Date(session.timestamp), "hh:mm a")}
           </p>
         </div>
         <div className="flex gap-2">
           {!isEditing && (
             <Edit
-              className="h-4 w-4 text-purple-500 hidden group-hover:block"
+              className="h-4 w-4 text-purple-500 dark:text-purple-400 hidden group-hover:block"
               onClick={() => setIsEditing(true)}
             />
           )}
           {isEditing && (
             <CircleCheckBig
-              className="h-4 w-4 text-purple-500 cursor-pointer"
+              className="h-4 w-4 text-purple-500 dark:text-purple-400 cursor-pointer"
               onClick={handleEdit}
             />
           )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Trash2
-                className={`h-4 w-4 text-gray-500 ${
+                className={`h-4 w-4 text-gray-500 dark:text-gray-400 ${
                   isEditing ? "hidden" : "hidden group-hover:block"
                 }`}
               />
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="dark:bg-gray-800">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-purple-500">
+                <AlertDialogTitle className="text-purple-500 dark:text-purple-400">
                   Are you absolutely sure?
                 </AlertDialogTitle>
-                <AlertDialogDescription>
+                <AlertDialogDescription className="dark:text-gray-300">
                   This action cannot be undone. This will permanently delete the chat session.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="text-purple-500 hover:text-purple-700">
+                <AlertDialogCancel className="text-purple-500 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300">
                   Cancel
                 </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
-                  className="bg-purple-500 hover:bg-purple-700 text-white"
+                  className="bg-purple-500 dark:bg-purple-600 hover:bg-purple-700 dark:hover:bg-purple-700 text-white"
                 >
                   Continue
                 </AlertDialogAction>

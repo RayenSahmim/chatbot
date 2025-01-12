@@ -64,18 +64,23 @@
     @apply bg-background text-foreground;
   }
 }
+::-webkit-scrollbar {
+  display: none;
 
-@layer utilities {
-  .hide-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;     /* Firefox */
-  }
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;             /* Chrome, Safari and Opera */
-  }
 }
 
+
 /* Add this in your global CSS or tailwind config */
+/* global.css */
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Hide scrollbar in WebKit-based browsers */
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* Hide scrollbar in IE and Edge */
+  scrollbar-width: none; /* Hide scrollbar in Firefox */
+}
+
 @keyframes custom-spin {
   0% {
     transform: rotate(0deg);

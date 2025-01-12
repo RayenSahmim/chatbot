@@ -1,6 +1,6 @@
 "use client";
 import { v4 as uuidv4 } from "uuid";
-import React, { useEffect, useState } from "react";
+import React, {  useEffect, useState } from "react";
 import { ChatHistory } from "@/components/ChatHistory";
 import { ChatInput } from "@/components/ChatInput";
 import { Sidebar } from "@/sections/Sidebar";
@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import Header from "@/sections/Header";
 import { EmptyState } from "@/components/EmptyState";
+import { sendAIResponse } from "./actions/Ai.action";
 
 function App() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -165,14 +166,8 @@ function App() {
       };
       setMessages((prevMessages) => [...prevMessages, initialBotMessage]);
 
-      const res = await fetch("/api/stream-ai-response", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
-      });
-
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
+      const stream = await sendAIResponse(prompt, messages);
+      const reader = stream.getReader();
       let responseText = "";
 
       if (reader) {
@@ -180,8 +175,8 @@ function App() {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value);
-          responseText += chunk;
+          
+          responseText += value;
 
           setMessages((prevMessages) =>
             prevMessages.map((message) =>
@@ -226,11 +221,13 @@ function App() {
     setActiveSessionId(sessionId);
   };
 
+
+
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-white dark:bg-gray-900">
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-20 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -238,10 +235,10 @@ function App() {
       <div
         className={`${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } transform md:translate-x-0 transition-transform duration-200 ease-in-out fixed md:relative z-30 w-[300px] md:min-w-[300px] md:w-1/5 h-full bg-white border-r`}
+        } transform md:translate-x-0 transition-transform duration-200 ease-in-out fixed md:relative z-30 w-[300px] md:min-w-[300px] md:w-1/5 h-full bg-white dark:bg-gray-800 border-r dark:border-gray-700`}
       >
         <Sidebar
-        setActiveSessionId={setActiveSessionId}
+          setActiveSessionId={setActiveSessionId}
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
           sessionLoading={sessionLoading}
@@ -255,25 +252,25 @@ function App() {
       </div>
 
       <div className="flex flex-col flex-1 w-full md:w-4/5">
-        <div className="border-b bg-white px-4 py-2 shadow-sm">
+        <div className="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 shadow-sm">
           <Header isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
         </div>
-        
-        <div className="flex-1 overflow-x-hidden">
+        <div className="flex-1 overflow-x-hidden max-w-6xl mx-auto">
+          
           {activeSessionId ? (
-            <div className="h-fit min-h-full bg-white shadow-sm">
+            <div className="h-fit min-h-full bg-white dark:bg-gray-900 shadow-sm">
               <ChatHistory messages={messages} />
             </div>
           ) : (
             <EmptyState onCreateSession={createSession} />
           )}
+          
         </div>
-
-        <div className="border-t bg-white p-4 w-full">
-          {activeSessionId && (
-            <ChatInput onSendMessage={handleSubmit} isLoading={isLoading} />
-          )}
+        {activeSessionId && (
+        <div className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 p-4 w-full ">
+          <ChatInput onSendMessage={handleSubmit} isLoading={isLoading} />
         </div>
+        )}
       </div>
     </div>
   );
