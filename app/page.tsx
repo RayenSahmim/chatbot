@@ -255,7 +255,7 @@ function App() {
         <div className="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 shadow-sm">
           <Header isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
         </div>
-        <div className="flex-1 overflow-x-hidden max-w-6xl mx-auto">
+        <div className="flex-1 overflow-x-hidden  ">
           
           {activeSessionId ? (
             <div className="h-fit min-h-full bg-white dark:bg-gray-900 shadow-sm">

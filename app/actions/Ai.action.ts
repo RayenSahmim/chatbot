@@ -2,8 +2,9 @@
 import { formatHistory } from "@/lib/utils";
 import { Message } from "@/types";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { formatPromptString } from "@/lib/promts";
 const generationConfig = {
-  temperature: 1,
+  temperature: 2,
   topP: 0.95,
   topK: 40,
   maxOutputTokens: 8192,
@@ -24,7 +25,7 @@ export const sendAIResponse = async (prompt: string , history : Message []) => {
       history: formatHistory(history),
     });
 
-    const result = await chat.sendMessageStream(prompt);
+    const result = await chat.sendMessageStream([prompt , formatPromptString ]);
 
     // Create a ReadableStream for streaming the response
     const stream = new ReadableStream({
