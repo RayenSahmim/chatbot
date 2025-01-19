@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ useremail: string }> }) {
     try {
-        const useremail  = (await params).useremail;
+        const useremail = (await params).useremail;
 
         await connectDB();
 
@@ -17,8 +17,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
         const limit = parseInt(url.searchParams.get("limit") || "0", 10); // Default to 0 (no limit) if not provided
         const offset = parseInt(url.searchParams.get("offset") || "0", 10); // Default to 0 if not provided
 
-        // Query the database with optional limit and offset
-        const sessionsQuery = ChatSessionModel.find({ useremail }).lean();
+        // Query the database with sorting, optional limit and offset
+        const sessionsQuery = ChatSessionModel.find({ useremail })
+            .sort({ createdAt: -1 }) // Sort by createdAt field in descending order (-1)
+            .lean();
 
         if (limit > 0) {
             sessionsQuery.limit(limit);

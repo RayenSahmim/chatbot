@@ -1,6 +1,6 @@
 "use client";
 import { v4 as uuidv4 } from "uuid";
-import React, {  useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ChatHistory } from "@/components/ChatHistory";
 import { ChatInput } from "@/components/ChatInput";
 import { Sidebar } from "@/sections/Sidebar";
@@ -10,17 +10,25 @@ import { redirect } from "next/navigation";
 import Header from "@/sections/Header";
 import { EmptyState } from "@/components/EmptyState";
 import { sendAIResponse } from "./actions/Ai.action";
+import { Loader2 } from "lucide-react";
 
 function App() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
+  const [isfetchLoading, setIsfetchLoading] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
+  const [offset, setOffset] = useState(0); // Track the offset
+  const [hasMore, setHasMore] = useState(true); // Check if more messages are available
+  const containerRef = useRef<HTMLDivElement>(null); // Reference to the scrollable container
+
+  const limit = 10; // Number of messages per fetch
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const activeSession = activeSessionId 
+  const activeSession = activeSessionId
+    
     ? sessions.find((s) => s._id === activeSessionId)
     : undefined;
 
@@ -37,8 +45,6 @@ function App() {
       const res = await fetch(`api/sessions/${session?.user?.email}`);
       const data = await res.json();
       setSessions(data);
-      
-      
     } catch (error) {
       console.error("Error fetching sessions:", error);
     } finally {
@@ -48,7 +54,7 @@ function App() {
 
   useEffect(() => {
     fetchsessions();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   const createSession = async () => {
@@ -90,18 +96,39 @@ function App() {
     }
   };
 
-  const fetchMessagesBySession = async (sessionId: string | undefined) => {
+  const fetchMessagesBySession = async (
+    sessionId: string | undefined,
+    newOffset: number
+  ) => {
     if (!sessionId) {
       setMessages([]);
       return;
     }
-
+    setIsfetchLoading(true);
+  
     try {
-      const res = await fetch(`/api/messages/${sessionId}`);
+      const res = await fetch(
+        `/api/messages/${sessionId}?limit=${limit}&offset=${newOffset}`
+      );
       const data = await res.json();
-      setMessages(data);
+      
+      if (data.length === 0) {
+        setHasMore(false);
+      }
+      
+      // For initial load (newOffset === 0)
+      if (newOffset === 0) {
+        setMessages(data);
+      } else {
+        // Prepend older messages at the top
+        setMessages(prevMessages => [...data, ...prevMessages]);
+      }
+      
+      setOffset(newOffset + data.length);
     } catch (error) {
       console.error("Error fetching messages:", error);
+    } finally {
+      setIsfetchLoading(false);
     }
   };
 
@@ -133,8 +160,21 @@ function App() {
   };
 
   useEffect(() => {
-    fetchMessagesBySession(activeSessionId);
+    setOffset(0);
+    setHasMore(true);
+    fetchMessagesBySession(activeSessionId, 0);
   }, [activeSessionId]);
+
+  const handleScroll = () => {
+    if (!containerRef.current || !hasMore || isfetchLoading) return;
+  
+    const { scrollTop } = containerRef.current;
+    
+    // Load more when user scrolls to top
+    if (scrollTop === 0) {
+      fetchMessagesBySession(activeSessionId, offset);
+    }
+  };
 
   const handleSubmit = async (prompt: string) => {
     if (!activeSessionId) {
@@ -175,7 +215,6 @@ function App() {
           const { done, value } = await reader.read();
           if (done) break;
 
-          
           responseText += value;
 
           setMessages((prevMessages) =>
@@ -197,7 +236,8 @@ function App() {
 
       const errorMessage: Message = {
         _id: uuidv4(),
-        content: "I apologize, but I encountered an error while processing your request.",
+        content:
+          "I apologize, but I encountered an error while processing your request.",
         sender: "bot",
         timestamp: new Date(),
         sessionId: activeSessionId,
@@ -221,8 +261,6 @@ function App() {
     setActiveSessionId(sessionId);
   };
 
-
-
   return (
     <div className="flex h-screen bg-white dark:bg-gray-900">
       {isSidebarOpen && (
@@ -234,7 +272,7 @@ function App() {
 
       <div
         className={`${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         } transform md:translate-x-0 transition-transform duration-200 ease-in-out fixed md:relative z-30 w-[300px] md:min-w-[300px] md:w-1/5 h-full bg-white dark:bg-gray-800 border-r dark:border-gray-700`}
       >
         <Sidebar
@@ -253,23 +291,33 @@ function App() {
 
       <div className="flex flex-col flex-1 w-full md:w-4/5">
         <div className="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 shadow-sm">
-          <Header isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+          <Header
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
+          />
         </div>
-        <div className="flex-1 overflow-x-hidden  ">
-          
-          {activeSessionId ? (
-            <div className="h-fit min-h-full bg-white dark:bg-gray-900 shadow-sm">
-              <ChatHistory messages={messages} />
-            </div>
-          ) : (
-            <EmptyState onCreateSession={createSession} />
-          )}
-          
-        </div>
+        <div
+        className="flex-1 overflow-x-hidden"
+        ref={containerRef}
+        onScroll={handleScroll}
+      >
+        {isfetchLoading && (
+          <div className="flex justify-center p-4 w-full">
+            <Loader2 className="animate-spin" />
+          </div>
+        )}
+        {activeSessionId ? (
+          <div className="h-fit min-h-full bg-white dark:bg-gray-900 shadow-sm">
+            <ChatHistory messages={messages} />
+          </div>
+        ) : (
+          <EmptyState onCreateSession={createSession} />
+        )}
+      </div>
         {activeSessionId && (
-        <div className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 p-4 w-full ">
-          <ChatInput onSendMessage={handleSubmit} isLoading={isLoading} />
-        </div>
+          <div className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 p-4 w-full ">
+            <ChatInput onSendMessage={handleSubmit} isLoading={isLoading} />
+          </div>
         )}
       </div>
     </div>
